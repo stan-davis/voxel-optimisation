@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class GreedyChunk : MonoBehaviour
 {
-    public const int CHUNK_SIZE = 6;
+    public const int CHUNK_SIZE = 5;
 
     public Voxel[,,] data = new Voxel[CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE];
 
@@ -86,13 +86,15 @@ public class GreedyChunk : MonoBehaviour
             if(length > 0)
             {
                 AppendQuad(
-                    new Vector3(x, length + y, z),
-                    new Vector3(x, length + y, z),
+                    new Vector3(x, y + length, z),
+                    new Vector3(x, y + length, z),
                     new Vector3(x, y, z),
                     new Vector3(x, y, z),
                     Direction.LEFT);
             }
         }
+
+        length = 0;
 
         //RIGHT (X+)
         if (!chunkHelper.visitedXP[x, y, z] && VisibleFaceXP(x + 1, y, z))
@@ -111,8 +113,8 @@ public class GreedyChunk : MonoBehaviour
             if (length > 0)
             {
                 AppendQuad(
-                    new Vector3(x, length + y, z),
-                    new Vector3(x, length + y, z),
+                    new Vector3(x, y + length, z),
+                    new Vector3(x, y + length, z),
                     new Vector3(x, y, z),
                     new Vector3(x, y, z),
                     Direction.RIGHT);
@@ -138,13 +140,15 @@ public class GreedyChunk : MonoBehaviour
             if (length > 0)
             {
                 AppendQuad(
-                    new Vector3(x, length + y, z),
-                    new Vector3(x, length + y, z),
+                    new Vector3(x, y + length, z),
+                    new Vector3(x, y + length, z),
                     new Vector3(x, y, z),
                     new Vector3(x, y, z),
                     Direction.BACK);
             }
         }
+
+        length = 0;
 
         //FRONT (Z+)
         if (!chunkHelper.visitedZP[x, y, z] && VisibleFaceZP(x, y, z + 1))
@@ -163,8 +167,8 @@ public class GreedyChunk : MonoBehaviour
             if (length > 0)
             {
                 AppendQuad(
-                    new Vector3(x, length + y, z),
-                    new Vector3(x, length + y, z),
+                    new Vector3(x, y + length, z),
+                    new Vector3(x, y + length, z),
                     new Vector3(x, y, z),
                     new Vector3(x, y, z),
                     Direction.FRONT);
@@ -190,11 +194,38 @@ public class GreedyChunk : MonoBehaviour
             if (length > 0)
             {
                 AppendQuad(
-                    new Vector3(length + x, y, z),
-                    new Vector3(length + x, y, z),
+                    new Vector3(x + length, y, z),
+                    new Vector3(x + length, y, z),
                     new Vector3(x, y, z),
                     new Vector3(x, y, z),
                     Direction.BOTTOM);
+            }
+        }
+
+        length = 0;
+
+        //TOP (Y+)
+        if (!chunkHelper.visitedYP[x, y, z] && VisibleFaceYP(x, y + 1, z))
+        {
+            for (int i = x; i < CHUNK_SIZE; i++)
+            {
+                //If we reach an empty block, end the run
+                if (DifferentVoxel(new Vector3Int(i, y, z), voxel))
+                    break;
+
+                chunkHelper.visitedYP[i, y, z] = true;
+
+                length++;
+            }
+
+            if (length > 0)
+            {
+                AppendQuad(
+                    new Vector3(x + length, y, z),
+                    new Vector3(x + length, y, z),
+                    new Vector3(x, y, z),
+                    new Vector3(x, y, z),
+                    Direction.TOP);
             }
         }
     }
@@ -232,6 +263,13 @@ public class GreedyChunk : MonoBehaviour
         if (y < 0) return true;
 
         return data[x, y, z].type == 0;
+    }
+
+    bool VisibleFaceYP(int x, int y, int z)
+    {
+        if (y >= CHUNK_SIZE) return true;
+
+        return data[x, 0, z].type == 0;
     }
 
     bool DifferentVoxel(Vector3Int access, Voxel current)

@@ -5,13 +5,13 @@ using UnityEngine;
 
 public class Chunk : MonoBehaviour
 {
-    public const int CHUNK_SIZE = 6;
+    public const int CHUNK_SIZE = 5;
 
     public Voxel[,,] data = new Voxel[CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE];
 
     private List<Vector3> vertices = new List<Vector3>();
     private List<int> triangles = new List<int>();
-    private int faceCount = 0;
+    //private int faceCount = 0;
 
     private void Start()
     {
@@ -31,22 +31,19 @@ public class Chunk : MonoBehaviour
         DateTime startTime = DateTime.Now;
 
         Mesh mesh = new Mesh();
+        mesh.Clear();
 
         for(int x = 0; x < CHUNK_SIZE; x++)
             for (int z = 0; z < CHUNK_SIZE; z++)
                 for (int y = 0; y < CHUNK_SIZE; y++)
                 {
-                    if (data[x,y,z].type != 0)
-                    {
-                        Vector3Int position = new Vector3Int(x, y, z);
-                        CreateVoxel(position);
-                    }
+                    CreateVoxel(new Vector3Int(x, y, z));
                 }
 
-        SetTrisFromVerts();
+        CreateTriangles();
 
-        mesh.vertices = vertices.ToArray();
-        mesh.triangles = triangles.ToArray();
+        mesh.SetVertices(vertices);
+        mesh.SetTriangles(triangles, 0);
 
         mesh.RecalculateNormals();
 
@@ -55,8 +52,7 @@ public class Chunk : MonoBehaviour
         //Debug timing
         DateTime currentTime = DateTime.Now;
         TimeSpan duration = currentTime.Subtract(startTime);
-
-        Debug.Log("Face count: " + faceCount.ToString());
+        
         Debug.Log("Vertices: " + vertices.Count.ToString());
         Debug.Log("Triangles: " + triangles.Count.ToString());
         Debug.Log("Chunk built in " + duration.Milliseconds.ToString() + "ms");
@@ -104,24 +100,23 @@ public class Chunk : MonoBehaviour
     private void AppendQuad(Vector3 position, Direction direction)
     {
         for (int i = 0; i < 4; i++)
-            vertices.Add(position + VoxelMeshData.vertices[(int)direction][i]);
-
-        faceCount++;
+            vertices.Add(position + VoxelMeshDataRegular.vertices[(int)direction][i]);
     }
 
-    private void SetTrisFromVerts()
+    private void CreateTriangles()
     {
-        int tl = vertices.Count - 4 * faceCount;
-
-        for (int i = 0; i < faceCount; i++)
+        for (int i = 0; i < vertices.Count; i += 4)
+        {
+            //Create a quad from triangles
             triangles.AddRange(new int[]
             {
-                tl + i * 4,
-                tl + i * 4 + 1,
-                tl + i * 4 + 2,
-                tl + i * 4,
-                tl + i * 4 + 2,
-                tl + i * 4 + 3
+                i, //Triangle 1
+                i + 1,
+                i + 2,
+                i, //Triangle 2
+                i + 2,
+                i + 3,
             });
+        }
     }
 }

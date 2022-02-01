@@ -12,8 +12,22 @@ public static class VoxelMeshData
     //ORDER OF VERTICES (TOP LEFT, TOP RIGHT, BOTTOM RIGHT, BOTTOM LEFT
     public static Vector3[][] vertices =
     {
-        new Vector3[] { new Vector3(0, 1, 0), new Vector3(0, 1, 1), new Vector3(1, 1, 1), new Vector3(1, 1, 0) }, //top
-        new Vector3[] { new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(1, 0, 1), new Vector3(1, 0, 0) }, //bottom
+        new Vector3[] { new Vector3(0, 1, 1), new Vector3(0, 1, 0), new Vector3(0, 1, 0), new Vector3(0, 1, 1) }, //top
+        new Vector3[] { new Vector3(0, 0, 0), new Vector3(0, 0, 1), new Vector3(0, 0, 1), new Vector3(0, 0, 0) }, //bottom
+        new Vector3[] { new Vector3(1, 0, 1), new Vector3(0, 0, 1), new Vector3(0, 0, 1), new Vector3(1, 0, 1) }, //front
+        new Vector3[] { new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(1, 0, 0), new Vector3(0, 0, 0) }, //back
+        new Vector3[] { new Vector3(1, 0, 0), new Vector3(1, 0, 1), new Vector3(1, 0, 1), new Vector3(1, 0, 0) }, //right
+        new Vector3[] { new Vector3(0, 0, 1), new Vector3(0, 0, 0), new Vector3(0, 0, 0), new Vector3(0, 0, 1) }  //left
+    };
+}
+
+public static class VoxelMeshDataRegular
+{
+    //ORDER OF VERTICES (TOP LEFT, TOP RIGHT, BOTTOM RIGHT, BOTTOM LEFT
+    public static Vector3[][] vertices =
+    {
+        new Vector3[] { new Vector3(1, 1, 1), new Vector3(1, 1, 0), new Vector3(0, 1, 0), new Vector3(0, 1, 1) }, //top
+        new Vector3[] { new Vector3(1, 0, 0), new Vector3(1, 0, 1), new Vector3(0, 0, 1), new Vector3(0, 0, 0) }, //bottom
         new Vector3[] { new Vector3(1, 1, 1), new Vector3(0, 1, 1), new Vector3(0, 0, 1), new Vector3(1, 0, 1) }, //front
         new Vector3[] { new Vector3(0, 1, 0), new Vector3(1, 1, 0), new Vector3(1, 0, 0), new Vector3(0, 0, 0) }, //back
         new Vector3[] { new Vector3(1, 1, 0), new Vector3(1, 1, 1), new Vector3(1, 0, 1), new Vector3(1, 0, 0) }, //right
