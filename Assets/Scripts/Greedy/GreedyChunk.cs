@@ -21,7 +21,7 @@ public class GreedyChunk : MonoBehaviour
             for (int z = 0; z < CHUNK_SIZE; z++)
                 for (int x = 0; x < CHUNK_SIZE; x++)
                 {
-                    data[x, y, z].type = 1;
+                    data[x, y, z].type = (byte)UnityEngine.Random.Range(0, 2);
                 }
 
         GenerateMesh();
@@ -123,7 +123,7 @@ public class GreedyChunk : MonoBehaviour
 
         length = 0;
 
-        //BACK (Z-)
+        //FRONT (Z-)
         if (!chunkHelper.visitedZN[x, y, z] && VisibleFaceZN(x, y, z - 1))
         {
             for (int i = y; i < CHUNK_SIZE; i++)
@@ -150,7 +150,7 @@ public class GreedyChunk : MonoBehaviour
 
         length = 0;
 
-        //FRONT (Z+)
+        //BACK (Z+)
         if (!chunkHelper.visitedZP[x, y, z] && VisibleFaceZP(x, y, z + 1))
         {
             for (int i = y; i < CHUNK_SIZE; i++)
@@ -177,16 +177,17 @@ public class GreedyChunk : MonoBehaviour
 
         length = 0;
 
-        //BACK (Y-)
+        /*
+        //BOTTOM (Y-)
         if (!chunkHelper.visitedYN[x, y, z] && VisibleFaceYN(x, y - 1, z))
         {
-            for (int i = x; i < CHUNK_SIZE; i++)
+            for (int i = z; i < CHUNK_SIZE; i++)
             {
                 //If we reach an empty block, end the run
-                if (DifferentVoxel(new Vector3Int(i, y, z), voxel))
+                if (DifferentVoxel(new Vector3Int(x, y, i), voxel))
                     break;
 
-                chunkHelper.visitedYN[i, y, z] = true;
+                chunkHelper.visitedYN[x, y, i] = true;
 
                 length++;
             }
@@ -194,10 +195,10 @@ public class GreedyChunk : MonoBehaviour
             if (length > 0)
             {
                 AppendQuad(
-                    new Vector3(x + length, y, z),
-                    new Vector3(x + length, y, z),
                     new Vector3(x, y, z),
                     new Vector3(x, y, z),
+                    new Vector3(x, y, z + length),
+                    new Vector3(x, y, z + length),
                     Direction.BOTTOM);
             }
         }
@@ -207,13 +208,13 @@ public class GreedyChunk : MonoBehaviour
         //TOP (Y+)
         if (!chunkHelper.visitedYP[x, y, z] && VisibleFaceYP(x, y + 1, z))
         {
-            for (int i = x; i < CHUNK_SIZE; i++)
+            for (int i = z; i < CHUNK_SIZE; i++)
             {
                 //If we reach an empty block, end the run
-                if (DifferentVoxel(new Vector3Int(i, y, z), voxel))
+                if (DifferentVoxel(new Vector3Int(x, y, i), voxel))
                     break;
 
-                chunkHelper.visitedYP[i, y, z] = true;
+                chunkHelper.visitedYP[x, y, i] = true;
 
                 length++;
             }
@@ -221,13 +222,14 @@ public class GreedyChunk : MonoBehaviour
             if (length > 0)
             {
                 AppendQuad(
-                    new Vector3(x + length, y, z),
-                    new Vector3(x + length, y, z),
+                    new Vector3(x, y, z + length),
+                    new Vector3(x, y, z + length),
                     new Vector3(x, y, z),
                     new Vector3(x, y, z),
                     Direction.TOP);
             }
         }
+        */
     }
 
     bool VisibleFaceXN(int x, int y, int z)
@@ -279,12 +281,12 @@ public class GreedyChunk : MonoBehaviour
         return v.type != current.type;
     }
 
-    private void AppendQuad(Vector3 tl, Vector3 tr, Vector3 br, Vector3 bl, Direction direction)
+    private void AppendQuad(Vector3 tl, Vector3 tr, Vector3 bl, Vector3 br, Direction direction)
     {
         vertices.Add(tl + VoxelMeshData.vertices[(int)direction][0]);
         vertices.Add(tr + VoxelMeshData.vertices[(int)direction][1]);
-        vertices.Add(br + VoxelMeshData.vertices[(int)direction][2]);
-        vertices.Add(bl + VoxelMeshData.vertices[(int)direction][3]);
+        vertices.Add(bl + VoxelMeshData.vertices[(int)direction][2]);
+        vertices.Add(br + VoxelMeshData.vertices[(int)direction][3]);
     }
 
     private void CreateTriangles()

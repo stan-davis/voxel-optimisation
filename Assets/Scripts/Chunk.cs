@@ -3,32 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(MeshFilter))] [RequireComponent(typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
 {
-    public const int CHUNK_SIZE = 5;
+    public const int CHUNK_SIZE = 16;
 
     public Voxel[,,] data = new Voxel[CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE];
 
     private List<Vector3> vertices = new List<Vector3>();
     private List<int> triangles = new List<int>();
-    //private int faceCount = 0;
-
-    private void Start()
-    {
-        //For testing only!!
-        for (int x = 0; x < CHUNK_SIZE; x++)
-            for (int z = 0; z < CHUNK_SIZE; z++)
-                for (int y = 0; y < CHUNK_SIZE; y++)
-                {
-                    data[x, y, z].type = 1;
-                }
-        
-       GenerateMesh();
-    }
 
     public void GenerateMesh()
     {
-        DateTime startTime = DateTime.Now;
+        //DateTime startTime = DateTime.Now;
 
         Mesh mesh = new Mesh();
         mesh.Clear();
@@ -37,6 +24,9 @@ public class Chunk : MonoBehaviour
             for (int z = 0; z < CHUNK_SIZE; z++)
                 for (int y = 0; y < CHUNK_SIZE; y++)
                 {
+                    if (data[x, y, z].type == 0)
+                        continue;
+
                     CreateVoxel(new Vector3Int(x, y, z));
                 }
 
@@ -49,13 +39,16 @@ public class Chunk : MonoBehaviour
 
         GetComponent<MeshFilter>().mesh = mesh;
 
+        /*
         //Debug timing
         DateTime currentTime = DateTime.Now;
         TimeSpan duration = currentTime.Subtract(startTime);
         
+        
         Debug.Log("Vertices: " + vertices.Count.ToString());
-        Debug.Log("Triangles: " + triangles.Count.ToString());
+        Debug.Log("Triangles: " + (triangles.Count / 3).ToString());
         Debug.Log("Chunk built in " + duration.Milliseconds.ToString() + "ms");
+        */
     }
 
     private void CreateVoxel(Vector3Int position)
