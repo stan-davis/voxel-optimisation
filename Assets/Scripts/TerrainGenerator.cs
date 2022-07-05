@@ -1,6 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Collections;
+using Unity.Jobs;
 
 public class TerrainGenerator : MonoBehaviour
 {
@@ -18,11 +21,18 @@ public class TerrainGenerator : MonoBehaviour
 
     private void GenerateTerrain()
     {
+        DateTime startTime = DateTime.Now;
+
         for (int x = -worldSize; x < worldSize; x++)
             for (int z = -worldSize; z < worldSize; z++)
             {
                 CreateChunk(x, z);
             }
+
+        DateTime currentTime = DateTime.Now;
+        TimeSpan duration = currentTime.Subtract(startTime);
+
+        Debug.Log("Terrain generated in: " + duration.Milliseconds.ToString() + "ms");
     }
 
     private void CreateChunk(int chunkX, int chunkZ)
@@ -37,15 +47,15 @@ public class TerrainGenerator : MonoBehaviour
         chunkObject.GenerateMesh();
     }
 
-    private Voxel[,,] GenerateTerrainData(int chunkX, int chunkZ)
+    private Voxel[] GenerateTerrainData(int chunkX, int chunkZ)
     {
-        Voxel[,,] data = new Voxel[Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE, Chunk.CHUNK_SIZE];
+        Voxel[] data = new Voxel[Chunk.CHUNK_SIZE * Chunk.CHUNK_SIZE * Chunk.CHUNK_SIZE];
 
         for (int y = 0; y < Chunk.CHUNK_SIZE; y++)
             for (int x = 0; x < Chunk.CHUNK_SIZE; x++)
                 for (int z = 0; z < Chunk.CHUNK_SIZE; z++)
                 {
-                    data[x,y,z] = GenerateVoxelData(x + (chunkX * Chunk.CHUNK_SIZE), y, z + (chunkZ * Chunk.CHUNK_SIZE));
+                    data[x + Chunk.CHUNK_SIZE * (y + Chunk.CHUNK_SIZE * z)] = GenerateVoxelData(x + (chunkX * Chunk.CHUNK_SIZE), y, z + (chunkZ * Chunk.CHUNK_SIZE));
                 }
 
         return data;

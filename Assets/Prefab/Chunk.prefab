@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5456695787717804051}
   - component: {fileID: 5456695787717804044}
   - component: {fileID: 5456695787717804045}
-  - component: {fileID: 5456695787717804050}
+  - component: {fileID: 8332934977898385817}
   m_Layer: 0
   m_Name: Chunk
   m_TagString: Untagged
@@ -82,7 +82,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &5456695787717804050
+--- !u!114 &8332934977898385817
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -91,6 +91,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 5456695787717804048}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b7df45ba1a7ebcb4c82e1e7da9e0dfdd, type: 3}
+  m_Script: {fileID: 11500000, guid: 6519a43ef93dba94bab3cab9d3f71ee0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

@@ -1,22 +1,20 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Collections;
+using Unity.Jobs;
 
 [RequireComponent(typeof(MeshFilter))] [RequireComponent(typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
 {
     public const int CHUNK_SIZE = 16;
 
-    public Voxel[,,] data = new Voxel[CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE];
+    public Voxel[] data = new Voxel[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
 
     private List<Vector3> vertices = new List<Vector3>();
     private List<int> triangles = new List<int>();
 
     public void GenerateMesh()
     {
-        //DateTime startTime = DateTime.Now;
-
         Mesh mesh = new Mesh();
         mesh.Clear();
 
@@ -24,10 +22,10 @@ public class Chunk : MonoBehaviour
             for (int z = 0; z < CHUNK_SIZE; z++)
                 for (int y = 0; y < CHUNK_SIZE; y++)
                 {
-                    if (data[x, y, z].type == 0)
+                    if (data[PositionToIndex(x,y,z)].type == 0)
                         continue;
 
-                    CreateVoxel(new Vector3Int(x, y, z));
+                    CreateVoxel(x,y,z);
                 }
 
         CreateTriangles();
@@ -38,56 +36,52 @@ public class Chunk : MonoBehaviour
         mesh.RecalculateNormals();
 
         GetComponent<MeshFilter>().mesh = mesh;
-
-        /*
-        //Debug timing
-        DateTime currentTime = DateTime.Now;
-        TimeSpan duration = currentTime.Subtract(startTime);
-        
-        
-        Debug.Log("Vertices: " + vertices.Count.ToString());
-        Debug.Log("Triangles: " + (triangles.Count / 3).ToString());
-        Debug.Log("Chunk built in " + duration.Milliseconds.ToString() + "ms");
-        */
     }
 
-    private void CreateVoxel(Vector3Int position)
+    private void CreateVoxel(int x, int y, int z)
     {
+        Vector3 position = new Vector3(x, y, z);
+
         //top
-        if (position.y == CHUNK_SIZE - 1 || data[position.x, position.y + 1, position.z].type == 0)
+        if (y == CHUNK_SIZE - 1 || data[PositionToIndex(x, y + 1, z)].type == 0)
         {
             AppendQuad(position, Direction.TOP);
         }
 
         //bottom
-        if (position.y == 0 || data[position.x, position.y - 1, position.z].type == 0)
+        if (position.y == 0 || data[PositionToIndex(x, y - 1, z)].type == 0)
         {
             AppendQuad(position, Direction.BOTTOM);
         }
 
         //front
-        if (position.z == CHUNK_SIZE - 1 || data[position.x, position.y, position.z + 1].type == 0)
+        if (position.z == CHUNK_SIZE - 1 || data[PositionToIndex(x, y, z + 1)].type == 0)
         {
             AppendQuad(position, Direction.FRONT);
         }
 
         //back
-        if (position.z == 0|| data[position.x, position.y, position.z - 1].type == 0)
+        if (position.z == 0|| data[PositionToIndex(x, y, z - 1)].type == 0)
         {
             AppendQuad(position, Direction.BACK);
         }
 
         //right
-        if (position.x == CHUNK_SIZE - 1 || data[position.x + 1, position.y, position.z].type == 0)
+        if (position.x == CHUNK_SIZE - 1 || data[PositionToIndex(x + 1, y, z)].type == 0)
         {
             AppendQuad(position, Direction.RIGHT);
         }
 
         //left
-        if (position.x == 0 || data[position.x - 1, position.y, position.z].type == 0)
+        if (position.x == 0 || data[PositionToIndex(x - 1, y, z)].type == 0)
         {
             AppendQuad(position, Direction.LEFT);
         }
+    }
+
+    private int PositionToIndex(int x, int y, int z)
+    {
+        return x + CHUNK_SIZE * (y + CHUNK_SIZE * z);
     }
 
     private void AppendQuad(Vector3 position, Direction direction)
