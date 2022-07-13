@@ -1,109 +1,129 @@
-using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
 
-[RequireComponent(typeof(MeshFilter))] [RequireComponent(typeof(MeshRenderer))]
+public enum ChunkMethod { Lazy, Culled, Runs };
+
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class Chunk : MonoBehaviour
 {
     public const int CHUNK_SIZE = 16;
+    public const int CHUNK_SIZE_CUBED = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
-    public Voxel[] data = new Voxel[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE];
+    public ChunkMethod method = ChunkMethod.Culled;
 
-    private List<Vector3> vertices = new List<Vector3>();
-    private List<int> triangles = new List<int>();
+    public Voxel[] data = new Voxel[CHUNK_SIZE_CUBED];
 
     public void GenerateMesh()
     {
         Mesh mesh = new Mesh();
         mesh.Clear();
 
-        for(int x = 0; x < CHUNK_SIZE; x++)
-            for (int z = 0; z < CHUNK_SIZE; z++)
-                for (int y = 0; y < CHUNK_SIZE; y++)
-                {
-                    if (data[PositionToIndex(x,y,z)].type == 0)
-                        continue;
-
-                    CreateVoxel(x,y,z);
-                }
-
-        CreateTriangles();
-
-        mesh.SetVertices(vertices);
-        mesh.SetTriangles(triangles, 0);
+        switch(method)
+        {
+            case ChunkMethod.Lazy:
+                LazyChunk(mesh);
+                break;
+            case ChunkMethod.Culled:
+                CulledChunk(mesh);
+                break;
+            case ChunkMethod.Runs: 
+                RunsChunk(mesh);
+                break;
+        }
 
         mesh.RecalculateNormals();
 
         GetComponent<MeshFilter>().mesh = mesh;
     }
 
-    private void CreateVoxel(int x, int y, int z)
+    private void LazyChunk(Mesh mesh)
     {
-        Vector3 position = new Vector3(x, y, z);
+        LazyChunkJob chunkJob = new LazyChunkJob();
 
-        //top
-        if (y == CHUNK_SIZE - 1 || data[PositionToIndex(x, y + 1, z)].type == 0)
+        chunkJob.vertices = new NativeList<Vector3>(Allocator.TempJob);
+        chunkJob.triangles = new NativeList<int>(Allocator.TempJob);
+        chunkJob.data = new NativeArray<Voxel>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+
+        for (int i = 0; i < data.Length; i++)
         {
-            AppendQuad(position, Direction.TOP);
+            chunkJob.data[i] = data[i];
         }
 
-        //bottom
-        if (position.y == 0 || data[PositionToIndex(x, y - 1, z)].type == 0)
-        {
-            AppendQuad(position, Direction.BOTTOM);
-        }
+        JobHandle handle = chunkJob.Schedule();
+        handle.Complete();
 
-        //front
-        if (position.z == CHUNK_SIZE - 1 || data[PositionToIndex(x, y, z + 1)].type == 0)
-        {
-            AppendQuad(position, Direction.FRONT);
-        }
+        mesh.SetVertices(chunkJob.vertices.ToArray());
+        mesh.SetTriangles(chunkJob.triangles.ToArray(), 0);
 
-        //back
-        if (position.z == 0|| data[PositionToIndex(x, y, z - 1)].type == 0)
-        {
-            AppendQuad(position, Direction.BACK);
-        }
-
-        //right
-        if (position.x == CHUNK_SIZE - 1 || data[PositionToIndex(x + 1, y, z)].type == 0)
-        {
-            AppendQuad(position, Direction.RIGHT);
-        }
-
-        //left
-        if (position.x == 0 || data[PositionToIndex(x - 1, y, z)].type == 0)
-        {
-            AppendQuad(position, Direction.LEFT);
-        }
+        chunkJob.vertices.Dispose();
+        chunkJob.triangles.Dispose();
+        chunkJob.data.Dispose();
     }
 
-    private int PositionToIndex(int x, int y, int z)
+    private void CulledChunk(Mesh mesh)
     {
-        return x + CHUNK_SIZE * (y + CHUNK_SIZE * z);
-    }
+        //Start Job
+        CulledChunkJob chunkJob = new CulledChunkJob();
 
-    private void AppendQuad(Vector3 position, Direction direction)
-    {
-        for (int i = 0; i < 4; i++)
-            vertices.Add(position + VoxelMeshDataRegular.vertices[(int)direction][i]);
-    }
+        chunkJob.vertices = new NativeList<Vector3>(Allocator.TempJob);
+        chunkJob.triangles = new NativeList<int>(Allocator.TempJob);
+        chunkJob.data = new NativeArray<Voxel>(CHUNK_SIZE_CUBED, Allocator.TempJob);
 
-    private void CreateTriangles()
-    {
-        for (int i = 0; i < vertices.Count; i += 4)
+        for (int i = 0; i < data.Length; i++)
         {
-            //Create a quad from triangles
-            triangles.AddRange(new int[]
-            {
-                i, //Triangle 1
-                i + 1,
-                i + 2,
-                i, //Triangle 2
-                i + 2,
-                i + 3,
-            });
+            chunkJob.data[i] = data[i];
         }
+
+        JobHandle handle = chunkJob.Schedule();
+        handle.Complete();
+
+        //Set vertices from job vertices, triangles, etc
+        mesh.SetVertices(chunkJob.vertices.ToArray());
+        mesh.SetTriangles(chunkJob.triangles.ToArray(), 0);
+
+        //Dispose of job variables to avoid memory leaks
+        chunkJob.vertices.Dispose();
+        chunkJob.triangles.Dispose();
+        chunkJob.data.Dispose();
+    }
+
+    private void RunsChunk(Mesh mesh)
+    {
+        GreedyChunkJob chunkJob = new GreedyChunkJob();
+
+        chunkJob.vertices = new NativeList<Vector3>(Allocator.TempJob);
+        chunkJob.triangles = new NativeList<int>(Allocator.TempJob);
+        chunkJob.data = new NativeArray<Voxel>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+
+        chunkJob.visitedXN = new NativeArray<bool>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+        chunkJob.visitedXP = new NativeArray<bool>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+        chunkJob.visitedYN = new NativeArray<bool>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+        chunkJob.visitedYP = new NativeArray<bool>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+        chunkJob.visitedZN = new NativeArray<bool>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+        chunkJob.visitedZP = new NativeArray<bool>(CHUNK_SIZE_CUBED, Allocator.TempJob);
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            chunkJob.data[i] = data[i];
+        }
+
+        JobHandle handle = chunkJob.Schedule();
+        handle.Complete();
+
+        mesh.SetVertices(chunkJob.vertices.ToArray());
+        mesh.SetTriangles(chunkJob.triangles.ToArray(), 0);
+
+        chunkJob.vertices.Dispose();
+        chunkJob.triangles.Dispose();
+        chunkJob.data.Dispose();
+
+        chunkJob.visitedXN.Dispose();
+        chunkJob.visitedXP.Dispose();
+        chunkJob.visitedYN.Dispose();
+        chunkJob.visitedYP.Dispose();
+        chunkJob.visitedZN.Dispose();
+        chunkJob.visitedZP.Dispose();
     }
 }
